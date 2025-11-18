@@ -1,0 +1,12 @@
+C:\Users\emirr\OneDrive\Masaüstü\TicketSystem\src\TicketSystem.Domain\bin\Debug\net8.0\TicketSystem.Domain.deps.json
+C:\Users\emirr\OneDrive\Masaüstü\TicketSystem\src\TicketSystem.Domain\bin\Debug\net8.0\TicketSystem.Domain.dll
+C:\Users\emirr\OneDrive\Masaüstü\TicketSystem\src\TicketSystem.Domain\bin\Debug\net8.0\TicketSystem.Domain.pdb
+C:\Users\emirr\OneDrive\Masaüstü\TicketSystem\src\TicketSystem.Domain\obj\Debug\net8.0\TicketSystem.Domain.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\emirr\OneDrive\Masaüstü\TicketSystem\src\TicketSystem.Domain\obj\Debug\net8.0\TicketSystem.Domain.AssemblyInfoInputs.cache
+C:\Users\emirr\OneDrive\Masaüstü\TicketSystem\src\TicketSystem.Domain\obj\Debug\net8.0\TicketSystem.Domain.AssemblyInfo.cs
+C:\Users\emirr\OneDrive\Masaüstü\TicketSystem\src\TicketSystem.Domain\obj\Debug\net8.0\TicketSystem.Domain.csproj.CoreCompileInputs.cache
+C:\Users\emirr\OneDrive\Masaüstü\TicketSystem\src\TicketSystem.Domain\obj\Debug\net8.0\TicketSystem.Domain.sourcelink.json
+C:\Users\emirr\OneDrive\Masaüstü\TicketSystem\src\TicketSystem.Domain\obj\Debug\net8.0\TicketSystem.Domain.dll
+C:\Users\emirr\OneDrive\Masaüstü\TicketSystem\src\TicketSystem.Domain\obj\Debug\net8.0\refint\TicketSystem.Domain.dll
+C:\Users\emirr\OneDrive\Masaüstü\TicketSystem\src\TicketSystem.Domain\obj\Debug\net8.0\TicketSystem.Domain.pdb
+C:\Users\emirr\OneDrive\Masaüstü\TicketSystem\src\TicketSystem.Domain\obj\Debug\net8.0\ref\TicketSystem.Domain.dll
