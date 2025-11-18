@@ -136,6 +136,38 @@ public class TicketService : ITicketService
         return responses;
     }
 
+    public async Task<IEnumerable<TicketResponse>> GetTicketsByTechnicianCategoriesAsync(Guid technicianId)
+    {
+        // Get technician's category IDs
+        var technicianCategoryIds = await _context.TechnicianCategories
+            .Where(tc => tc.TechnicianId == technicianId)
+            .Select(tc => tc.CategoryId)
+            .ToListAsync();
+
+        if (!technicianCategoryIds.Any())
+        {
+            return new List<TicketResponse>();
+        }
+
+        // Get all tickets in those categories
+        var tickets = await _context.Tickets
+            .Include(t => t.Category)
+            .Include(t => t.Customer)
+            .Include(t => t.AssignedTechnician)
+            .Include(t => t.Messages)
+            .Where(t => technicianCategoryIds.Contains(t.CategoryId))
+            .OrderByDescending(t => t.CreatedAt)
+            .ToListAsync();
+
+        var responses = new List<TicketResponse>();
+        foreach (var ticket in tickets)
+        {
+            responses.Add(await MapToResponseAsync(ticket));
+        }
+
+        return responses;
+    }
+
     public async Task<IEnumerable<TicketResponse>> GetTicketsByCategoryAsync(int categoryId)
     {
         var tickets = await _context.Tickets

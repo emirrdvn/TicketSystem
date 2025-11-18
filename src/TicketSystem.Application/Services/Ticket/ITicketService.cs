@@ -12,6 +12,7 @@ public interface ITicketService
     Task<IEnumerable<TicketResponse>> GetAllTicketsAsync();
     Task<IEnumerable<TicketResponse>> GetTicketsByCustomerAsync(Guid customerId);
     Task<IEnumerable<TicketResponse>> GetTicketsByTechnicianAsync(Guid technicianId);
+    Task<IEnumerable<TicketResponse>> GetTicketsByTechnicianCategoriesAsync(Guid technicianId);
     Task<IEnumerable<TicketResponse>> GetTicketsByCategoryAsync(int categoryId);
     Task<IEnumerable<TicketResponse>> GetTicketsByStatusAsync(TicketStatus status);
     Task<TicketResponse> UpdateTicketStatusAsync(UpdateTicketStatusRequest request, Guid userId);

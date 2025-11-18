@@ -43,6 +43,12 @@ export const ticketAPI = {
     return response.data;
   },
 
+  // Get tickets by technician's categories
+  getTicketsByMyCategories: async () => {
+    const response = await axios.get('/ticket/my-categories');
+    return response.data;
+  },
+
   // Create ticket
   createTicket: async (ticketData) => {
     const response = await axios.post('/ticket', ticketData);

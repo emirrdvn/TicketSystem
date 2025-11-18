@@ -29,9 +29,34 @@ axiosInstance.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       // Token expired or invalid
+      // Get user type before clearing localStorage
+      const storedUser = localStorage.getItem('user');
+      let userType = null;
+
+      try {
+        if (storedUser) {
+          const parsedUser = JSON.parse(storedUser);
+          userType = parsedUser.userType;
+        }
+      } catch (e) {
+        // Ignore parse error
+      }
+
+      // Clear auth data
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      window.location.href = '/auth/login';
+
+      // Redirect based on user type
+      let redirectPath = '/auth/login'; // Default: Customer login
+
+      // UserType enum values: Admin = 1, Technician = 2, Customer = 3
+      if (userType === 1) { // Admin
+        redirectPath = '/auth/admin-login';
+      } else if (userType === 2) { // Technician
+        redirectPath = '/auth/technician-login';
+      }
+
+      window.location.href = redirectPath;
     }
     return Promise.reject(error);
   }

@@ -109,6 +109,22 @@ public class TicketController : ControllerBase
         }
     }
 
+    [HttpGet("my-categories")]
+    [Authorize(Roles = "Technician")]
+    public async Task<IActionResult> GetTicketsByMyCategories()
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            var tickets = await _ticketService.GetTicketsByTechnicianCategoriesAsync(userId);
+            return Ok(tickets);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
     [HttpGet("category/{categoryId}")]
     public async Task<IActionResult> GetTicketsByCategory(int categoryId)
     {

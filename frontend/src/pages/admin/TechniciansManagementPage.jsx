@@ -1,22 +1,32 @@
 import { useState, useEffect } from 'react';
 import { userAPI } from '../../lib/api/user.api';
+import { categoryAPI } from '../../lib/api/category.api';
 import { UserType } from '../../types';
 
 const TechniciansManagementPage = () => {
   const [technicians, setTechnicians] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const [showModal, setShowModal] = useState(false);
+  const [selectedTechnician, setSelectedTechnician] = useState(null);
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [modalLoading, setModalLoading] = useState(false);
 
   useEffect(() => {
-    fetchTechnicians();
+    fetchData();
   }, []);
 
-  const fetchTechnicians = async () => {
+  const fetchData = async () => {
     try {
-      const data = await userAPI.getUsersByType(UserType.Technician);
-      setTechnicians(data);
+      const [techData, catData] = await Promise.all([
+        userAPI.getUsersByType(UserType.Technician),
+        categoryAPI.getAllCategories()
+      ]);
+      setTechnicians(techData);
+      setCategories(catData);
     } catch (error) {
-      console.error('Error fetching technicians:', error);
+      console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
     }
@@ -53,6 +63,55 @@ const TechniciansManagementPage = () => {
     } catch (error) {
       console.error('Error toggling technician status:', error);
       alert('İşlem başarısız');
+    }
+  };
+
+  const openCategoryModal = async (technician) => {
+    setSelectedTechnician(technician);
+    setModalLoading(true);
+    setShowModal(true);
+
+    try {
+      const techCategories = await userAPI.getTechnicianCategories(technician.userId);
+      setSelectedCategories(techCategories);
+    } catch (error) {
+      console.error('Error fetching technician categories:', error);
+      setSelectedCategories([]);
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setSelectedTechnician(null);
+    setSelectedCategories([]);
+  };
+
+  const handleCategoryToggle = (categoryId) => {
+    setSelectedCategories(prev => {
+      if (prev.includes(categoryId)) {
+        return prev.filter(id => id !== categoryId);
+      } else {
+        return [...prev, categoryId];
+      }
+    });
+  };
+
+  const handleSaveCategories = async () => {
+    try {
+      setModalLoading(true);
+      await userAPI.assignCategoriesToTechnician(
+        selectedTechnician.userId,
+        selectedCategories
+      );
+      alert('Kategoriler başarıyla güncellendi');
+      closeModal();
+    } catch (error) {
+      console.error('Error assigning categories:', error);
+      alert('Kategoriler güncellenemedi');
+    } finally {
+      setModalLoading(false);
     }
   };
 
@@ -197,10 +256,19 @@ const TechniciansManagementPage = () => {
                           {tech.isActive ? 'Aktif' : 'Pasif'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                        <button
+                          onClick={() => openCategoryModal(tech)}
+                          className="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-5 font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+                        >
+                          <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                          </svg>
+                          Kategoriler
+                        </button>
                         <button
                           onClick={() => handleToggleActive(tech.userId, tech.isActive)}
-                          className="text-indigo-600 hover:text-indigo-900 mr-4"
+                          className="text-indigo-600 hover:text-indigo-900"
                         >
                           {tech.isActive ? 'Pasif Et' : 'Aktif Et'}
                         </button>
@@ -219,6 +287,78 @@ const TechniciansManagementPage = () => {
           </div>
         )}
       </div>
+
+      {/* Category Assignment Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium text-gray-900">
+                Kategori Ataması - {selectedTechnician?.fullName}
+              </h3>
+              <button
+                onClick={closeModal}
+                className="text-gray-400 hover:text-gray-500"
+              >
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {modalLoading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mx-auto"></div>
+                <p className="mt-2 text-sm text-gray-600">Yükleniyor...</p>
+              </div>
+            ) : (
+              <div>
+                <p className="text-sm text-gray-600 mb-4">
+                  Bu teknisyenin bakabileceği kategorileri seçin:
+                </p>
+
+                <div className="space-y-2 mb-6">
+                  {categories.map((category) => (
+                    <label
+                      key={category.id}
+                      className="flex items-center p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedCategories.includes(category.id)}
+                        onChange={() => handleCategoryToggle(category.id)}
+                        className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+                      />
+                      <div className="ml-3 flex-1">
+                        <div className="text-sm font-medium text-gray-900">{category.name}</div>
+                        {category.description && (
+                          <div className="text-xs text-gray-500">{category.description}</div>
+                        )}
+                      </div>
+                    </label>
+                  ))}
+                </div>
+
+                <div className="flex justify-end space-x-3">
+                  <button
+                    onClick={closeModal}
+                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+                  >
+                    İptal
+                  </button>
+                  <button
+                    onClick={handleSaveCategories}
+                    disabled={modalLoading}
+                    className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
+                  >
+                    {modalLoading ? 'Kaydediliyor...' : 'Kaydet'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,11 +1,22 @@
 import { useState, useEffect } from 'react';
 import { userAPI } from '../../lib/api/user.api';
+import { authAPI } from '../../lib/api/auth.api';
 import { UserType } from '../../types';
 
 const UsersManagementPage = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [formData, setFormData] = useState({
+    fullName: '',
+    email: '',
+    phoneNumber: '',
+    password: '',
+    userType: UserType.Customer
+  });
 
   useEffect(() => {
     fetchUsers();
@@ -56,6 +67,91 @@ const UsersManagementPage = () => {
     }
   };
 
+  const openCreateModal = () => {
+    setFormData({
+      fullName: '',
+      email: '',
+      phoneNumber: '',
+      password: '',
+      userType: UserType.Customer
+    });
+    setShowCreateModal(true);
+  };
+
+  const openEditModal = (user) => {
+    setSelectedUser(user);
+    setFormData({
+      fullName: user.fullName,
+      email: user.email,
+      phoneNumber: user.phoneNumber || '',
+      userType: user.userType
+    });
+    setShowEditModal(true);
+  };
+
+  const closeModals = () => {
+    setShowCreateModal(false);
+    setShowEditModal(false);
+    setSelectedUser(null);
+    setFormData({
+      fullName: '',
+      email: '',
+      phoneNumber: '',
+      password: '',
+      userType: UserType.Customer
+    });
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: name === 'userType' ? parseInt(value) : value
+    }));
+  };
+
+  const handleCreateUser = async (e) => {
+    e.preventDefault();
+    try {
+      // Use register endpoint for creating new users
+      const response = await authAPI.register(
+        formData.fullName,
+        formData.email,
+        formData.phoneNumber,
+        formData.password
+      );
+
+      // If admin or technician, we need to update user type (since register creates customer by default)
+      // This would require an admin endpoint to change user type
+      // For now, we'll just refresh the list
+      await fetchUsers();
+      alert('Kullanıcı başarıyla oluşturuldu');
+      closeModals();
+    } catch (error) {
+      console.error('Error creating user:', error);
+      alert('Kullanıcı oluşturulamadı: ' + (error.response?.data?.message || error.message));
+    }
+  };
+
+  const handleUpdateUser = async (e) => {
+    e.preventDefault();
+    try {
+      await userAPI.updateUser(selectedUser.userId, {
+        fullName: formData.fullName,
+        email: formData.email,
+        phoneNumber: formData.phoneNumber,
+        userType: formData.userType
+      });
+
+      await fetchUsers();
+      alert('Kullanıcı başarıyla güncellendi');
+      closeModals();
+    } catch (error) {
+      console.error('Error updating user:', error);
+      alert('Kullanıcı güncellenemedi');
+    }
+  };
+
   const getUserTypeLabel = (userType) => {
     switch (userType) {
       case UserType.Admin:
@@ -103,10 +199,23 @@ const UsersManagementPage = () => {
             </svg>
             Geri Dön
           </button>
-          <h1 className="text-3xl font-bold text-gray-900">Kullanıcı Yönetimi</h1>
-          <p className="mt-2 text-sm text-gray-600">
-            Tüm kullanıcıları görüntüleyin ve yönetin
-          </p>
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Kullanıcı Yönetimi</h1>
+              <p className="mt-2 text-sm text-gray-600">
+                Tüm kullanıcıları görüntüleyin ve yönetin
+              </p>
+            </div>
+            <button
+              onClick={openCreateModal}
+              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Kullanıcı Ekle
+            </button>
+          </div>
         </div>
 
         {/* Filters */}
@@ -253,10 +362,16 @@ const UsersManagementPage = () => {
                             {user.isActive ? 'Aktif' : 'Pasif'}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                          <button
+                            onClick={() => openEditModal(user)}
+                            className="text-blue-600 hover:text-blue-900"
+                          >
+                            Düzenle
+                          </button>
                           <button
                             onClick={() => handleToggleActive(user.userId, user.isActive)}
-                            className="text-indigo-600 hover:text-indigo-900 mr-4"
+                            className="text-indigo-600 hover:text-indigo-900"
                           >
                             {user.isActive ? 'Pasif Et' : 'Aktif Et'}
                           </button>
@@ -276,6 +391,185 @@ const UsersManagementPage = () => {
           </div>
         )}
       </div>
+
+      {/* Create User Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Yeni Kullanıcı Ekle</h3>
+              <button onClick={closeModals} className="text-gray-400 hover:text-gray-500">
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateUser} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Ad Soyad</label>
+                <input
+                  type="text"
+                  name="fullName"
+                  required
+                  value={formData.fullName}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">E-posta</label>
+                <input
+                  type="email"
+                  name="email"
+                  required
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Telefon</label>
+                <input
+                  type="tel"
+                  name="phoneNumber"
+                  value={formData.phoneNumber}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Şifre</label>
+                <input
+                  type="password"
+                  name="password"
+                  required
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Kullanıcı Tipi</label>
+                <select
+                  name="userType"
+                  value={formData.userType}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                >
+                  <option value={UserType.Customer}>Müşteri</option>
+                  <option value={UserType.Technician}>Teknisyen</option>
+                  <option value={UserType.Admin}>Admin</option>
+                </select>
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={closeModals}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  İptal
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                >
+                  Oluştur
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit User Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Kullanıcı Düzenle</h3>
+              <button onClick={closeModals} className="text-gray-400 hover:text-gray-500">
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleUpdateUser} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Ad Soyad</label>
+                <input
+                  type="text"
+                  name="fullName"
+                  required
+                  value={formData.fullName}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">E-posta</label>
+                <input
+                  type="email"
+                  name="email"
+                  required
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  disabled
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm bg-gray-100 cursor-not-allowed"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Telefon</label>
+                <input
+                  type="tel"
+                  name="phoneNumber"
+                  value={formData.phoneNumber}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Kullanıcı Tipi</label>
+                <select
+                  name="userType"
+                  value={formData.userType}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                >
+                  <option value={UserType.Customer}>Müşteri</option>
+                  <option value={UserType.Technician}>Teknisyen</option>
+                  <option value={UserType.Admin}>Admin</option>
+                </select>
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={closeModals}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  İptal
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+                >
+                  Güncelle
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

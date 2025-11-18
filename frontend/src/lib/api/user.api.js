@@ -52,5 +52,17 @@ export const userAPI = {
   getUsersByType: async (userType) => {
     const response = await axios.get(`/user/type/${userType}`);
     return response.data;
+  },
+
+  // Get technician categories
+  getTechnicianCategories: async (technicianId) => {
+    const response = await axios.get(`/user/${technicianId}/categories`);
+    return response.data;
+  },
+
+  // Assign categories to technician
+  assignCategoriesToTechnician: async (technicianId, categoryIds) => {
+    const response = await axios.post(`/user/${technicianId}/categories`, categoryIds);
+    return response.data;
   }
 };

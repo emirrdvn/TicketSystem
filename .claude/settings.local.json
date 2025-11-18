@@ -16,7 +16,8 @@
       "Bash(npm uninstall:*)",
       "Bash(curl:*)",
       "Bash(netstat:*)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "Bash(npm run build:*)"
     ],
     "deny": [],
     "ask": []

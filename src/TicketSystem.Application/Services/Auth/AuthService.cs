@@ -86,16 +86,16 @@ public class AuthService : IAuthService
         };
     }
 
-    public async Task<AuthResponse> RefreshTokenAsync(string refreshToken)
+    public Task<AuthResponse> RefreshTokenAsync(string refreshToken)
     {
         // RefreshToken validation burada yapılır
         // Basit implementasyon için şimdilik throw ediyoruz
         throw new NotImplementedException("RefreshToken henüz implement edilmedi");
     }
 
-    public async Task<bool> ValidateTokenAsync(string token)
+    public Task<bool> ValidateTokenAsync(string token)
     {
         var principal = _tokenGenerator.ValidateToken(token);
-        return principal != null;
+        return Task.FromResult(principal != null);
     }
 }

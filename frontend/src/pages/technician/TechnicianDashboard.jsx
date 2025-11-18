@@ -14,14 +14,19 @@ const TechnicianDashboard = () => {
     resolved: 0
   });
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState('assigned'); // 'assigned' or 'categories'
 
   useEffect(() => {
     fetchTickets();
   }, []);
 
-  const fetchTickets = async () => {
+  const fetchTickets = async (mode = viewMode) => {
     try {
-      const data = await ticketAPI.getAssignedTickets();
+      setLoading(true);
+      const data = mode === 'assigned'
+        ? await ticketAPI.getAssignedTickets()
+        : await ticketAPI.getTicketsByMyCategories();
+
       setTickets(data);
 
       // Calculate stats
@@ -37,6 +42,11 @@ const TechnicianDashboard = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleViewModeChange = (mode) => {
+    setViewMode(mode);
+    fetchTickets(mode);
   };
 
   if (loading) {
@@ -117,10 +127,38 @@ const TechnicianDashboard = () => {
           </div>
         </div>
 
+        {/* View Mode Toggle */}
+        <div className="bg-white rounded-lg shadow mb-6 p-4">
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => handleViewModeChange('assigned')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                viewMode === 'assigned'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Atanan Ticketlar
+            </button>
+            <button
+              onClick={() => handleViewModeChange('categories')}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                viewMode === 'categories'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              Kategorimdeki Tüm Ticketlar
+            </button>
+          </div>
+        </div>
+
         {/* Tickets List */}
         <div className="bg-white shadow rounded-lg">
           <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">Atanan Ticketlar</h2>
+            <h2 className="text-lg font-semibold text-gray-900">
+              {viewMode === 'assigned' ? 'Atanan Ticketlar' : 'Kategorimdeki Tüm Ticketlar'}
+            </h2>
           </div>
 
           {tickets.length === 0 ? (

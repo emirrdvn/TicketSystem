@@ -85,10 +85,26 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    // Kullanıcının tipini al (logout yapmadan önce)
+    const currentUserType = user?.userType;
+
+    // Logout yap
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setUser(null);
     setIsAuthenticated(false);
+
+    // Kullanıcı tipine göre yönlendir
+    let redirectPath = '/auth/login'; // Default: Customer login
+
+    if (currentUserType === UserType.Admin) {
+      redirectPath = '/auth/admin-login';
+    } else if (currentUserType === UserType.Technician) {
+      redirectPath = '/auth/technician-login';
+    }
+
+    // Yönlendirme için window.location kullan (AuthProvider içinde navigate kullanamayız)
+    window.location.href = redirectPath;
   };
 
   const isAdmin = () => user?.userType === UserType.Admin;
