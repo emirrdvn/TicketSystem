@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ticketAPI } from '../../lib/api/ticket.api';
 import { startConnection, stopConnection, getConnection } from '../../lib/signalr/connection';
 import { useAuth } from '../../context/AuthContext';
-import { StatusLabels, StatusColors, PriorityLabels, PriorityColors } from '../../types';
+import { TicketStatus, StatusLabels, StatusColors, PriorityLabels, PriorityColors, UserType } from '../../types';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 
@@ -18,6 +18,9 @@ const TicketDetailPage = () => {
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef(null);
   const [connection, setConnection] = useState(null);
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState(null);
+  const [statusComment, setStatusComment] = useState('');
 
   useEffect(() => {
     fetchTicketDetails();
@@ -79,6 +82,8 @@ const TicketDetailPage = () => {
       // Send message via API - Backend will broadcast via SignalR
       await ticketAPI.sendMessage(parseInt(id), newMessage.trim());
       setNewMessage('');
+      // Refresh ticket to see if auto-assigned
+      await fetchTicketDetails();
     } catch (error) {
       console.error('Error sending message:', error);
       alert('Mesaj gönderilemedi');
@@ -86,6 +91,29 @@ const TicketDetailPage = () => {
       setSending(false);
     }
   };
+
+  const handleStatusChange = (status) => {
+    setSelectedStatus(status);
+    setStatusComment('');
+    setShowStatusModal(true);
+  };
+
+  const handleStatusUpdate = async () => {
+    if (!selectedStatus) return;
+
+    try {
+      await ticketAPI.updateTicketStatus(parseInt(id), selectedStatus, statusComment);
+      setShowStatusModal(false);
+      setStatusComment('');
+      await fetchTicketDetails();
+      alert('Durum başarıyla güncellendi');
+    } catch (error) {
+      console.error('Error updating status:', error);
+      alert('Durum güncellenemedi');
+    }
+  };
+
+  const isAdminOrTechnician = user && (user.userType === UserType.Admin || user.userType === UserType.Technician);
 
   if (loading) {
     return (
@@ -174,6 +202,47 @@ const TicketDetailPage = () => {
                     {format(new Date(ticket.createdAt), 'dd MMMM yyyy HH:mm', { locale: tr })}
                   </p>
                 </div>
+
+                {/* Status Change Buttons - Only for Admin/Technician */}
+                {isAdminOrTechnician && (
+                  <div className="pt-4 border-t">
+                    <p className="text-sm text-gray-500 mb-2">Durum Değiştir</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {ticket.status !== TicketStatus.InProgress && (
+                        <button
+                          onClick={() => handleStatusChange(TicketStatus.InProgress)}
+                          className="px-3 py-2 text-xs font-medium text-white bg-orange-600 hover:bg-orange-700 rounded-md"
+                        >
+                          İşlemde
+                        </button>
+                      )}
+                      {ticket.status !== TicketStatus.WaitingCustomer && (
+                        <button
+                          onClick={() => handleStatusChange(TicketStatus.WaitingCustomer)}
+                          className="px-3 py-2 text-xs font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-md"
+                        >
+                          Müşteri Bekliyor
+                        </button>
+                      )}
+                      {ticket.status !== TicketStatus.Resolved && (
+                        <button
+                          onClick={() => handleStatusChange(TicketStatus.Resolved)}
+                          className="px-3 py-2 text-xs font-medium text-white bg-green-600 hover:bg-green-700 rounded-md"
+                        >
+                          Çözüldü
+                        </button>
+                      )}
+                      {ticket.status !== TicketStatus.Closed && (
+                        <button
+                          onClick={() => handleStatusChange(TicketStatus.Closed)}
+                          className="px-3 py-2 text-xs font-medium text-white bg-gray-600 hover:bg-gray-700 rounded-md"
+                        >
+                          Kapalı
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -273,6 +342,55 @@ const TicketDetailPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Status Change Modal */}
+      {showStatusModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium text-gray-900">
+                Durum Güncelle: {StatusLabels[selectedStatus]}
+              </h3>
+              <button
+                onClick={() => setShowStatusModal(false)}
+                className="text-gray-400 hover:text-gray-500"
+              >
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Yorum (Opsiyonel)
+              </label>
+              <textarea
+                value={statusComment}
+                onChange={(e) => setStatusComment(e.target.value)}
+                rows="3"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Durum değişikliği hakkında not ekleyin..."
+              />
+            </div>
+
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowStatusModal(false)}
+                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                İptal
+              </button>
+              <button
+                onClick={handleStatusUpdate}
+                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+              >
+                Güncelle
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

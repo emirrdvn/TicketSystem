@@ -310,22 +310,53 @@ public class TicketService : ITicketService
         _context.TicketMessages.Add(message);
 
         // Update ticket's UpdatedAt
-        var ticket = await _context.Tickets.FindAsync(request.TicketId);
+        var ticket = await _context.Tickets
+            .Include(t => t.AssignedTechnician)
+            .FirstOrDefaultAsync(t => t.Id == request.TicketId);
+
         if (ticket != null)
         {
             ticket.UpdatedAt = DateTime.UtcNow;
+
+            // AUTO-ASSIGN LOGIC: If sender is technician/admin and ticket is not assigned yet
+            var sender = await _context.Users.FindAsync(senderId);
+            if (sender != null &&
+                (sender.UserType == UserType.Technician || sender.UserType == UserType.Admin) &&
+                ticket.AssignedTechnicianId == null)
+            {
+                // Assign the first responder
+                ticket.AssignedTechnicianId = senderId;
+
+                // If ticket is still "New", change to "InProgress"
+                if (ticket.Status == TicketStatus.New)
+                {
+                    ticket.Status = TicketStatus.InProgress;
+                }
+
+                // Log status history
+                var statusHistory = new TicketStatusHistory
+                {
+                    TicketId = ticket.Id,
+                    OldStatus = TicketStatus.New,
+                    NewStatus = TicketStatus.InProgress,
+                    ChangedBy = senderId,
+                    ChangedAt = DateTime.UtcNow,
+                    Comment = "Otomatik atama - İlk yanıt"
+                };
+                _context.TicketStatusHistories.Add(statusHistory);
+            }
         }
 
         await _context.SaveChangesAsync();
 
-        var sender = await _context.Users.FindAsync(senderId);
+        var senderUser = await _context.Users.FindAsync(senderId);
 
         return new TicketMessageResponse
         {
             Id = message.Id,
             TicketId = message.TicketId,
             SenderId = message.SenderId,
-            SenderName = sender?.FullName ?? "Unknown",
+            SenderName = senderUser?.FullName ?? "Unknown",
             Message = message.Message,
             SentAt = message.SentAt,
             IsRead = message.IsRead
