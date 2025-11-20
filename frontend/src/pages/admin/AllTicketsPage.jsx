@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ticketAPI } from '../../lib/api/ticket.api';
 import { TicketStatus, StatusLabels, StatusColors, PriorityLabels, PriorityColors } from '../../types';
 import { formatDistanceToNow } from 'date-fns';
 import { tr } from 'date-fns/locale';
 
 const AllTicketsPage = () => {
+  const navigate = useNavigate();
   const [tickets, setTickets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
@@ -49,7 +50,7 @@ const AllTicketsPage = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
           <button
-            onClick={() => window.history.back()}
+            onClick={() => navigate('/admin')}
             className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
           >
             <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">

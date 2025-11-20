@@ -25,6 +25,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import AllTicketsPage from './pages/admin/AllTicketsPage';
 import UsersManagementPage from './pages/admin/UsersManagementPage';
 import TechniciansManagementPage from './pages/admin/TechniciansManagementPage';
+import CategoriesManagementPage from './pages/admin/CategoriesManagementPage';
 
 // Technician Pages
 import TechnicianDashboard from './pages/technician/TechnicianDashboard';
@@ -120,6 +121,16 @@ function App() {
                 <AuthGuard>
                   <RoleGuard allowedRoles={[UserType.Admin]}>
                     <TechniciansManagementPage />
+                  </RoleGuard>
+                </AuthGuard>
+              }
+            />
+            <Route
+              path="/admin/categories"
+              element={
+                <AuthGuard>
+                  <RoleGuard allowedRoles={[UserType.Admin]}>
+                    <CategoriesManagementPage />
                   </RoleGuard>
                 </AuthGuard>
               }

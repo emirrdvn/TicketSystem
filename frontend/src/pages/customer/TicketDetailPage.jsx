@@ -22,6 +22,16 @@ const TicketDetailPage = () => {
   const [selectedStatus, setSelectedStatus] = useState(null);
   const [statusComment, setStatusComment] = useState('');
 
+  // Determine back navigation path based on user role
+  const getBackPath = () => {
+    if (user?.userType === UserType.Admin) {
+      return '/admin/tickets';
+    } else if (user?.userType === UserType.Technician) {
+      return '/technician/tickets';
+    }
+    return '/customer/tickets';
+  };
+
   useEffect(() => {
     fetchTicketDetails();
     setupSignalR();
@@ -132,7 +142,7 @@ const TicketDetailPage = () => {
         <div className="text-center">
           <p className="text-gray-600">Ticket bulunamadı</p>
           <button
-            onClick={() => navigate('/customer/tickets')}
+            onClick={() => navigate(getBackPath())}
             className="mt-4 text-blue-600 hover:text-blue-700"
           >
             Geri Dön
@@ -148,7 +158,7 @@ const TicketDetailPage = () => {
         {/* Header */}
         <div className="mb-6">
           <button
-            onClick={() => navigate('/customer/tickets')}
+            onClick={() => navigate(getBackPath())}
             className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
           >
             <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
