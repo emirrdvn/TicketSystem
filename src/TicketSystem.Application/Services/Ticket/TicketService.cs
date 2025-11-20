@@ -34,12 +34,8 @@ public class TicketService : ITicketService
             CreatedAt = DateTime.UtcNow
         };
 
-        // Auto-assign technician
-        var assignedTechnician = await AutoAssignTechnicianAsync(request.CategoryId);
-        if (assignedTechnician != null)
-        {
-            ticket.AssignedTechnicianId = assignedTechnician.UserId;
-        }
+        // NOTE: No auto-assignment at creation time
+        // Ticket will be assigned when a technician sends the first message
 
         _context.Tickets.Add(ticket);
         await _context.SaveChangesAsync();
@@ -363,40 +359,9 @@ public class TicketService : ITicketService
         };
     }
 
-    // Helper: Auto-assign technician based on category
-    private async Task<Domain.Entities.User?> AutoAssignTechnicianAsync(int categoryId)
-    {
-        // Get all technicians assigned to this category
-        var technicians = await _context.TechnicianCategories
-            .Where(tc => tc.CategoryId == categoryId)
-            .Include(tc => tc.Technician)
-            .Select(tc => tc.Technician)
-            .ToListAsync();
-
-        if (!technicians.Any())
-            return null;
-
-        // Simple round-robin: Get technician with least assigned tickets
-        var technicianIds = technicians.Select(t => t.UserId).ToList();
-
-        var ticketCounts = await _context.Tickets
-            .Where(t => technicianIds.Contains(t.AssignedTechnicianId!.Value) && t.Status != TicketStatus.Closed)
-            .GroupBy(t => t.AssignedTechnicianId)
-            .Select(g => new { TechnicianId = g.Key, Count = g.Count() })
-            .ToListAsync();
-
-        // Find technician with minimum tickets
-        var assignedTechnician = technicians
-            .Select(t => new
-            {
-                Technician = t,
-                Count = ticketCounts.FirstOrDefault(tc => tc.TechnicianId == t.UserId)?.Count ?? 0
-            })
-            .OrderBy(x => x.Count)
-            .FirstOrDefault()?.Technician;
-
-        return assignedTechnician;
-    }
+    // NOTE: Auto-assignment removed from ticket creation
+    // Tickets are now assigned when a technician sends the first message (see SendMessageAsync method)
+    // This ensures technicians only get assigned to tickets they actively engage with
 
     // Helper: Map to response
     private async Task<TicketResponse> MapToResponseAsync(Domain.Entities.Ticket ticket)
