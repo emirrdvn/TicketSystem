@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TicketSystem.Domain.Entities;
@@ -7,6 +8,10 @@ using TicketSystem.Infrastructure.Identity;
 
 namespace TicketSystem.API.Controllers;
 
+/// <summary>
+/// SECURITY WARNING: These endpoints should ONLY be accessible in Development environment
+/// or by Admin users. They create privileged accounts and seed sensitive data.
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 public class SeedController : ControllerBase
@@ -18,9 +23,22 @@ public class SeedController : ControllerBase
         _context = context;
     }
 
+    /// <summary>
+    /// SECURITY: Development only - Seeds initial data
+    /// This endpoint is DISABLED in production for security reasons
+    /// </summary>
     [HttpPost("seed-all")]
     public async Task<IActionResult> SeedAll()
     {
+        // SECURITY: Only allow in Development environment
+        var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+        if (environment != "Development")
+        {
+            return StatusCode(403, new
+            {
+                message = "Forbidden: Seed endpoints are only available in Development environment"
+            });
+        }
         try
         {
             var results = new List<string>();
@@ -173,9 +191,23 @@ public class SeedController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// SECURITY: Development only - Creates admin account
+    /// This endpoint is DISABLED in production for security reasons
+    /// </summary>
     [HttpPost("create-admin")]
     public async Task<IActionResult> CreateAdmin()
     {
+        // SECURITY: Only allow in Development environment
+        var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+        if (environment != "Development")
+        {
+            return StatusCode(403, new
+            {
+                message = "Forbidden: Seed endpoints are only available in Development environment"
+            });
+        }
+
         // Check if admin already exists
         var existingAdmin = _context.Users.FirstOrDefault(u => u.Email == "admin@ticketsystem.com");
         if (existingAdmin != null)
@@ -208,9 +240,23 @@ public class SeedController : ControllerBase
         });
     }
 
+    /// <summary>
+    /// SECURITY: Development only - Creates technician account
+    /// This endpoint is DISABLED in production for security reasons
+    /// </summary>
     [HttpPost("create-technician")]
     public async Task<IActionResult> CreateTechnician()
     {
+        // SECURITY: Only allow in Development environment
+        var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+        if (environment != "Development")
+        {
+            return StatusCode(403, new
+            {
+                message = "Forbidden: Seed endpoints are only available in Development environment"
+            });
+        }
+
         // Check if technician already exists
         var existingTech = _context.Users.FirstOrDefault(u => u.Email == "tech@ticketsystem.com");
         if (existingTech != null)

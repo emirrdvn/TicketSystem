@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
@@ -9,6 +10,8 @@ using TicketSystem.Application.Services.Auth;
 using TicketSystem.Application.Services.Ticket;
 using TicketSystem.Application.Services.User;
 using TicketSystem.Infrastructure.Identity;
+using TicketSystem.API.Authorization.Handlers;
+using TicketSystem.API.Authorization.Requirements;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -69,19 +72,45 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-builder.Services.AddAuthorization();
+// Authorization Handlers
+builder.Services.AddScoped<IAuthorizationHandler, TicketAccessHandler>();
+builder.Services.AddScoped<IAuthorizationHandler, ResourceOwnerHandler>();
+
+// Authorization Policies
+builder.Services.AddAuthorization(options =>
+{
+    // Ticket access policy - requires user to be ticket owner, assigned technician, or admin
+    options.AddPolicy("TicketAccess", policy =>
+        policy.Requirements.Add(new TicketAccessRequirement()));
+
+    // Resource owner policy - requires user to be the resource owner or admin
+    options.AddPolicy("ResourceOwner", policy =>
+        policy.Requirements.Add(new ResourceOwnerRequirement()));
+
+    // Admin only policy
+    options.AddPolicy("AdminOnly", policy =>
+        policy.RequireRole("Admin"));
+
+    // Technician or Admin policy
+    options.AddPolicy("TechnicianOrAdmin", policy =>
+        policy.RequireRole("Technician", "Admin"));
+});
 
 // SignalR
 builder.Services.AddSignalR();
 
-// CORS
+// CORS - SECURITY: Restrict to specific origins in production
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
+    options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.AllowAnyOrigin()
+        var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()
+            ?? new[] { "http://localhost:5173", "http://localhost:3000" };
+
+        policy.WithOrigins(allowedOrigins)
               .AllowAnyMethod()
-              .AllowAnyHeader();
+              .AllowAnyHeader()
+              .AllowCredentials(); // Required for SignalR
     });
 });
 
@@ -93,10 +122,13 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+else
+{
+    // HTTPS redirect only in Production for security
+    app.UseHttpsRedirection();
+}
 
-app.UseHttpsRedirection();
-
-app.UseCors("AllowAll");
+app.UseCors("AllowFrontend");
 
 app.UseAuthentication();
 app.UseAuthorization();

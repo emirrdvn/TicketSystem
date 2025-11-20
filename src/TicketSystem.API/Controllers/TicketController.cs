@@ -6,6 +6,7 @@ using TicketSystem.API.Hubs;
 using TicketSystem.Application.DTOs.Request;
 using TicketSystem.Application.Services.Ticket;
 using TicketSystem.Domain.Enums;
+using TicketSystem.API.Authorization.Requirements;
 
 namespace TicketSystem.API.Controllers;
 
@@ -16,11 +17,16 @@ public class TicketController : ControllerBase
 {
     private readonly ITicketService _ticketService;
     private readonly IHubContext<TicketHub> _hubContext;
+    private readonly IAuthorizationService _authorizationService;
 
-    public TicketController(ITicketService ticketService, IHubContext<TicketHub> hubContext)
+    public TicketController(
+        ITicketService ticketService,
+        IHubContext<TicketHub> hubContext,
+        IAuthorizationService authorizationService)
     {
         _ticketService = ticketService;
         _hubContext = hubContext;
+        _authorizationService = authorizationService;
     }
 
     private Guid GetCurrentUserId()
@@ -29,7 +35,16 @@ public class TicketController : ControllerBase
         return Guid.Parse(userIdClaim ?? throw new UnauthorizedAccessException());
     }
 
+    private string GetCurrentUserRole()
+    {
+        return User.FindFirst(ClaimTypes.Role)?.Value ?? string.Empty;
+    }
+
+    /// <summary>
+    /// SECURITY: Admin-only endpoint to retrieve all tickets in the system
+    /// </summary>
     [HttpGet]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> GetAllTickets()
     {
         try
@@ -43,11 +58,21 @@ public class TicketController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// SECURITY: Requires authorization - only ticket owner, assigned technician, or admin can access
+    /// </summary>
     [HttpGet("{id}")]
     public async Task<IActionResult> GetTicketById(int id)
     {
         try
         {
+            // Authorization check: verify user can access this ticket
+            var authResult = await _authorizationService.AuthorizeAsync(User, id, new TicketAccessRequirement());
+            if (!authResult.Succeeded)
+            {
+                return Forbid(); // 403 Forbidden
+            }
+
             var ticket = await _ticketService.GetTicketByIdAsync(id);
             return Ok(ticket);
         }
@@ -61,12 +86,24 @@ public class TicketController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// SECURITY: Requires authorization - only ticket owner, assigned technician, or admin can access
+    /// This endpoint is vulnerable to enumeration attacks, authorization is critical
+    /// </summary>
     [HttpGet("number/{ticketNumber}")]
     public async Task<IActionResult> GetTicketByNumber(string ticketNumber)
     {
         try
         {
             var ticket = await _ticketService.GetTicketByNumberAsync(ticketNumber);
+
+            // Authorization check: verify user can access this ticket
+            var authResult = await _authorizationService.AuthorizeAsync(User, ticket.Id, new TicketAccessRequirement());
+            if (!authResult.Succeeded)
+            {
+                return Forbid(); // 403 Forbidden
+            }
+
             return Ok(ticket);
         }
         catch (KeyNotFoundException ex)
@@ -125,7 +162,11 @@ public class TicketController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// SECURITY: Admin/Technician only - filters tickets by category
+    /// </summary>
     [HttpGet("category/{categoryId}")]
+    [Authorize(Roles = "Admin,Technician")]
     public async Task<IActionResult> GetTicketsByCategory(int categoryId)
     {
         try
@@ -139,7 +180,11 @@ public class TicketController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// SECURITY: Admin/Technician only - filters tickets by status
+    /// </summary>
     [HttpGet("status/{status}")]
+    [Authorize(Roles = "Admin,Technician")]
     public async Task<IActionResult> GetTicketsByStatus(TicketStatus status)
     {
         try
@@ -168,11 +213,21 @@ public class TicketController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// SECURITY: Only ticket owner, assigned technician, or admin can update status
+    /// </summary>
     [HttpPatch("{id}/status")]
     public async Task<IActionResult> UpdateTicketStatus(int id, [FromBody] UpdateTicketStatusRequest request)
     {
         try
         {
+            // Authorization check: verify user can modify this ticket
+            var authResult = await _authorizationService.AuthorizeAsync(User, id, new TicketAccessRequirement());
+            if (!authResult.Succeeded)
+            {
+                return Forbid(); // 403 Forbidden
+            }
+
             var userId = GetCurrentUserId();
             request.TicketId = id;
             var ticket = await _ticketService.UpdateTicketStatusAsync(request, userId);
@@ -225,11 +280,22 @@ public class TicketController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// SECURITY: Only ticket owner, assigned technician, or admin can read messages
+    /// Prevents unauthorized access to private conversations
+    /// </summary>
     [HttpGet("{id}/messages")]
     public async Task<IActionResult> GetTicketMessages(int id)
     {
         try
         {
+            // Authorization check: verify user can access this ticket's messages
+            var authResult = await _authorizationService.AuthorizeAsync(User, id, new TicketAccessRequirement());
+            if (!authResult.Succeeded)
+            {
+                return Forbid(); // 403 Forbidden
+            }
+
             var messages = await _ticketService.GetTicketMessagesAsync(id);
             return Ok(messages);
         }
@@ -239,11 +305,22 @@ public class TicketController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// SECURITY: Only ticket owner, assigned technician, or admin can send messages
+    /// Prevents unauthorized users from injecting messages into conversations
+    /// </summary>
     [HttpPost("messages")]
     public async Task<IActionResult> SendMessage([FromBody] SendMessageRequest request)
     {
         try
         {
+            // Authorization check: verify user can send messages to this ticket
+            var authResult = await _authorizationService.AuthorizeAsync(User, request.TicketId, new TicketAccessRequirement());
+            if (!authResult.Succeeded)
+            {
+                return Forbid(); // 403 Forbidden
+            }
+
             var userId = GetCurrentUserId();
             var message = await _ticketService.SendMessageAsync(request, userId);
 

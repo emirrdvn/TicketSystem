@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using TicketSystem.Application.DTOs.Response;
 using TicketSystem.Application.Services.User;
 using TicketSystem.Domain.Enums;
+using TicketSystem.API.Authorization.Requirements;
 
 namespace TicketSystem.API.Controllers;
 
@@ -12,10 +14,18 @@ namespace TicketSystem.API.Controllers;
 public class UserController : ControllerBase
 {
     private readonly IUserService _userService;
+    private readonly IAuthorizationService _authorizationService;
 
-    public UserController(IUserService userService)
+    public UserController(IUserService userService, IAuthorizationService authorizationService)
     {
         _userService = userService;
+        _authorizationService = authorizationService;
+    }
+
+    private Guid GetCurrentUserId()
+    {
+        var userIdClaim = User.FindFirst("userId")?.Value;
+        return Guid.Parse(userIdClaim ?? throw new UnauthorizedAccessException());
     }
 
     [HttpGet]
@@ -33,11 +43,22 @@ public class UserController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// SECURITY: Only the user themselves or admin can view user profile
+    /// Prevents unauthorized access to other users' personal information
+    /// </summary>
     [HttpGet("{userId}")]
     public async Task<IActionResult> GetUserById(Guid userId)
     {
         try
         {
+            // Authorization check: verify user can access this profile (self or admin)
+            var authResult = await _authorizationService.AuthorizeAsync(User, userId, new ResourceOwnerRequirement());
+            if (!authResult.Succeeded)
+            {
+                return Forbid(); // 403 Forbidden
+            }
+
             var user = await _userService.GetUserByIdAsync(userId);
             return Ok(user);
         }
@@ -85,11 +106,33 @@ public class UserController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// SECURITY: Only the user themselves or admin can update user profile
+    /// Prevents unauthorized modification of other users' data
+    /// </summary>
     [HttpPut("{userId}")]
     public async Task<IActionResult> UpdateUser(Guid userId, [FromBody] UserResponse userDto)
     {
         try
         {
+            // Authorization check: verify user can modify this profile (self or admin)
+            var authResult = await _authorizationService.AuthorizeAsync(User, userId, new ResourceOwnerRequirement());
+            if (!authResult.Succeeded)
+            {
+                return Forbid(); // 403 Forbidden
+            }
+
+            // Additional security: prevent non-admins from changing their user type
+            var currentUserId = GetCurrentUserId();
+            var currentUserRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            if (currentUserId == userId && currentUserRole != "Admin")
+            {
+                // Regular users cannot change their own user type
+                var existingUser = await _userService.GetUserByIdAsync(userId);
+                userDto.UserType = existingUser.UserType;
+            }
+
             var user = await _userService.UpdateUserAsync(userId, userDto);
             return Ok(user);
         }

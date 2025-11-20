@@ -19,7 +19,13 @@
       "Bash(findstr:*)",
       "Bash(npm run build:*)",
       "Bash(powershell -command \"(Get-Content TicketDetailPage.jsx | Measure-Object -Line).Lines\")",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(powershell -ExecutionPolicy Bypass -File \"C:\\Users\\emirr\\OneDrive\\Masaüstü\\TicketSystem\\security-test.ps1\")",
+      "Bash(nul)",
+      "Bash(powershell -Command:*)",
+      "Bash(powershell -ExecutionPolicy Bypass -File \"C:\\Users\\emirr\\OneDrive\\Masaüstü\\TicketSystem\\create-test-data.ps1\")",
+      "Bash(powershell -ExecutionPolicy Bypass -File:*)",
+      "Bash(del create-customer2-ticket.ps1 create-test-data.ps1 security-test.ps1 simplified-security-test.ps1 test-admin-login.ps1 test-tech-admin-access.ps1)"
     ],
     "deny": [],
     "ask": []

@@ -125,3 +125,4 @@ C:\Users\emirr\OneDrive\Masaüstü\TicketSystem\src\TicketSystem.API\obj\Debug\n
 C:\Users\emirr\OneDrive\Masaüstü\TicketSystem\src\TicketSystem.API\obj\Debug\net8.0\TicketSystem.API.pdb
 C:\Users\emirr\OneDrive\Masaüstü\TicketSystem\src\TicketSystem.API\obj\Debug\net8.0\TicketSystem.API.genruntimeconfig.cache
 C:\Users\emirr\OneDrive\Masaüstü\TicketSystem\src\TicketSystem.API\obj\Debug\net8.0\ref\TicketSystem.API.dll
+C:\Users\emirr\OneDrive\Masaüstü\TicketSystem\src\TicketSystem.API\bin\Debug\net8.0\appsettings.Production.json
