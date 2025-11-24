@@ -15,7 +15,6 @@ public class TicketResponse
     public Guid? AssignedTechnicianId { get; set; }
     public string? AssignedTechnicianName { get; set; }
     public TicketStatus Status { get; set; }
-    public TicketPriority Priority { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public DateTime? ClosedAt { get; set; }

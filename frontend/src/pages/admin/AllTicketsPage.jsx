@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ticketAPI } from '../../lib/api/ticket.api';
-import { TicketStatus, StatusLabels, StatusColors, PriorityLabels, PriorityColors } from '../../types';
+import { TicketStatus, StatusLabels, StatusColors } from '../../types';
 import { formatDistanceToNow } from 'date-fns';
 import { tr } from 'date-fns/locale';
 
@@ -153,9 +153,6 @@ const AllTicketsPage = () => {
                       Durum
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Öncelik
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Oluşturulma
                     </th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -213,11 +210,6 @@ const AllTicketsPage = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded ${StatusColors[ticket.status]}`}>
                           {StatusLabels[ticket.status]}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded ${PriorityColors[ticket.priority]}`}>
-                          {PriorityLabels[ticket.priority]}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

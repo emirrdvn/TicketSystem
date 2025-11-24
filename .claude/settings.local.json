@@ -25,7 +25,8 @@
       "Bash(powershell -Command:*)",
       "Bash(powershell -ExecutionPolicy Bypass -File \"C:\\Users\\emirr\\OneDrive\\Masaüstü\\TicketSystem\\create-test-data.ps1\")",
       "Bash(powershell -ExecutionPolicy Bypass -File:*)",
-      "Bash(del create-customer2-ticket.ps1 create-test-data.ps1 security-test.ps1 simplified-security-test.ps1 test-admin-login.ps1 test-tech-admin-access.ps1)"
+      "Bash(del create-customer2-ticket.ps1 create-test-data.ps1 security-test.ps1 simplified-security-test.ps1 test-admin-login.ps1 test-tech-admin-access.ps1)",
+      "Bash(mysql:*)"
     ],
     "deny": [],
     "ask": []

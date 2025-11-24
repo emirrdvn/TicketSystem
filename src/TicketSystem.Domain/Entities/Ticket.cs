@@ -12,7 +12,6 @@ public class Ticket : BaseEntity
     public Guid CustomerId { get; set; }
     public Guid? AssignedTechnicianId { get; set; }
     public TicketStatus Status { get; set; } = TicketStatus.New;
-    public TicketPriority Priority { get; set; } = TicketPriority.Medium;
     public DateTime? ClosedAt { get; set; }
 
     // Navigation properties

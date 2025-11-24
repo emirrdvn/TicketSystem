@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ticketAPI } from '../../lib/api/ticket.api';
-import { TicketStatus, StatusLabels, StatusColors, PriorityLabels, PriorityColors } from '../../types';
+import { TicketStatus, StatusLabels, StatusColors } from '../../types';
 import { formatDistanceToNow } from 'date-fns';
 import { tr } from 'date-fns/locale';
 
@@ -198,9 +198,6 @@ const TechnicianDashboard = () => {
                             </p>
                             <span className={`px-2 py-1 text-xs font-medium rounded ${StatusColors[ticket.status]}`}>
                               {StatusLabels[ticket.status]}
-                            </span>
-                            <span className={`px-2 py-1 text-xs font-medium rounded ${PriorityColors[ticket.priority]}`}>
-                              {PriorityLabels[ticket.priority]}
                             </span>
                           </div>
                           <p className="mt-2 text-base font-semibold text-gray-900">

@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ticketAPI } from '../../lib/api/ticket.api';
 import { startConnection, stopConnection, getConnection } from '../../lib/signalr/connection';
 import { useAuth } from '../../context/AuthContext';
-import { TicketStatus, StatusLabels, StatusColors, PriorityLabels, PriorityColors, UserType } from '../../types';
+import { TicketStatus, StatusLabels, StatusColors, UserType } from '../../types';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 
@@ -184,13 +184,6 @@ const TicketDetailPage = () => {
                   <p className="text-sm text-gray-500">Durum</p>
                   <span className={`inline-block px-2 py-1 text-xs font-medium rounded ${StatusColors[ticket.status]}`}>
                     {StatusLabels[ticket.status]}
-                  </span>
-                </div>
-
-                <div>
-                  <p className="text-sm text-gray-500">Öncelik</p>
-                  <span className={`inline-block px-2 py-1 text-xs font-medium rounded ${PriorityColors[ticket.priority]}`}>
-                    {PriorityLabels[ticket.priority]}
                   </span>
                 </div>
 

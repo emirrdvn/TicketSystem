@@ -29,7 +29,6 @@ public class TicketService : ITicketService
             Description = request.Description,
             CategoryId = request.CategoryId,
             CustomerId = customerId,
-            Priority = request.Priority,
             Status = TicketStatus.New,
             CreatedAt = DateTime.UtcNow
         };
@@ -382,7 +381,6 @@ public class TicketService : ITicketService
             AssignedTechnicianId = ticket.AssignedTechnicianId,
             AssignedTechnicianName = ticket.AssignedTechnician?.FullName,
             Status = ticket.Status,
-            Priority = ticket.Priority,
             CreatedAt = ticket.CreatedAt,
             UpdatedAt = ticket.UpdatedAt,
             ClosedAt = ticket.ClosedAt,

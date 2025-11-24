@@ -27,10 +27,6 @@ public class TicketConfiguration : IEntityTypeConfiguration<Ticket>
             .IsRequired()
             .HasConversion<int>();
 
-        builder.Property(t => t.Priority)
-            .IsRequired()
-            .HasConversion<int>();
-
         // Relationships
         builder.HasOne(t => t.Category)
             .WithMany(c => c.Tickets)

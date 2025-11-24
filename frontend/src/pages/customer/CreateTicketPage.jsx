@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ticketAPI } from '../../lib/api/ticket.api';
 import { categoryAPI } from '../../lib/api/category.api';
-import { TicketPriority, PriorityLabels } from '../../types';
 
 const CreateTicketPage = () => {
   const navigate = useNavigate();
@@ -11,8 +10,7 @@ const CreateTicketPage = () => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    categoryId: '',
-    priority: TicketPriority.Medium
+    categoryId: ''
   });
   const [error, setError] = useState('');
 
@@ -37,7 +35,7 @@ const CreateTicketPage = () => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'categoryId' || name === 'priority' ? parseInt(value) : value
+      [name]: name === 'categoryId' ? parseInt(value) : value
     }));
   };
 
@@ -119,28 +117,6 @@ const CreateTicketPage = () => {
               </select>
               <p className="mt-1 text-xs text-gray-500">
                 Talebinize uygun kategoriyi seçin
-              </p>
-            </div>
-
-            <div>
-              <label htmlFor="priority" className="block text-sm font-medium text-gray-700">
-                Öncelik <span className="text-red-500">*</span>
-              </label>
-              <select
-                id="priority"
-                name="priority"
-                required
-                value={formData.priority}
-                onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value={TicketPriority.Low}>{PriorityLabels[TicketPriority.Low]}</option>
-                <option value={TicketPriority.Medium}>{PriorityLabels[TicketPriority.Medium]}</option>
-                <option value={TicketPriority.High}>{PriorityLabels[TicketPriority.High]}</option>
-                <option value={TicketPriority.Urgent}>{PriorityLabels[TicketPriority.Urgent]}</option>
-              </select>
-              <p className="mt-1 text-xs text-gray-500">
-                Talebin aciliyetini belirtin
               </p>
             </div>
 
