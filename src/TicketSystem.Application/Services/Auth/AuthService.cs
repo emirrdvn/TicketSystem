@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using TicketSystem.Application.DTOs.Request;
 using TicketSystem.Application.DTOs.Response;
+using TicketSystem.Domain.Common;
 using TicketSystem.Domain.Entities;
 using TicketSystem.Domain.Enums;
 using TicketSystem.Infrastructure.Data;
@@ -43,7 +44,7 @@ public class AuthService : IAuthService
             UserType = user.UserType,
             Token = token,
             RefreshToken = refreshToken,
-            ExpiresAt = DateTime.UtcNow.AddMinutes(60)
+            ExpiresAt = DateTimeProvider.Now.AddMinutes(60)
         };
     }
 
@@ -65,7 +66,7 @@ public class AuthService : IAuthService
             PhoneNumber = request.PhoneNumber,
             UserType = request.UserType,
             IsActive = true,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTimeProvider.Now
         };
 
         _context.Users.Add(user);
@@ -82,7 +83,7 @@ public class AuthService : IAuthService
             UserType = user.UserType,
             Token = token,
             RefreshToken = refreshToken,
-            ExpiresAt = DateTime.UtcNow.AddMinutes(60)
+            ExpiresAt = DateTimeProvider.Now.AddMinutes(60)
         };
     }
 

@@ -88,5 +88,15 @@ export const ticketAPI = {
       message
     });
     return response.data;
+  },
+
+  // Send message with attachment
+  sendMessageWithAttachment: async (ticketId, formData) => {
+    const response = await axios.post('/ticket/messages', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    return response.data;
   }
 };

@@ -6,7 +6,7 @@ namespace TicketSystem.Domain.Entities;
 public class User
 {
     public Guid UserId { get; set; } = Guid.NewGuid();
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; } = DateTimeProvider.Now;
     public DateTime? UpdatedAt { get; set; }
     public string Email { get; set; } = string.Empty;
     public string PasswordHash { get; set; } = string.Empty;

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Http;
 using TicketSystem.Application.DTOs.Request;
 using TicketSystem.Application.DTOs.Response;
 using TicketSystem.Domain.Enums;
@@ -19,5 +20,5 @@ public interface ITicketService
     Task<TicketResponse> AssignTicketAsync(int ticketId, Guid technicianId);
     Task<bool> DeleteTicketAsync(int ticketId);
     Task<IEnumerable<TicketMessageResponse>> GetTicketMessagesAsync(int ticketId);
-    Task<TicketMessageResponse> SendMessageAsync(SendMessageRequest request, Guid senderId);
+    Task<TicketMessageResponse> SendMessageAsync(SendMessageRequest request, Guid senderId, IFormFile? attachment = null);
 }

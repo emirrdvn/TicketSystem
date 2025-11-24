@@ -310,7 +310,7 @@ public class TicketController : ControllerBase
     /// Prevents unauthorized users from injecting messages into conversations
     /// </summary>
     [HttpPost("messages")]
-    public async Task<IActionResult> SendMessage([FromBody] SendMessageRequest request)
+    public async Task<IActionResult> SendMessage([FromForm] SendMessageRequest request, [FromForm] IFormFile? attachment)
     {
         try
         {
@@ -322,7 +322,7 @@ public class TicketController : ControllerBase
             }
 
             var userId = GetCurrentUserId();
-            var message = await _ticketService.SendMessageAsync(request, userId);
+            var message = await _ticketService.SendMessageAsync(request, userId, attachment);
 
             // Broadcast message to all users in the ticket room via SignalR
             await _hubContext.Clients.Group($"ticket_{request.TicketId}")

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using TicketSystem.Application.DTOs.Request;
 using TicketSystem.Application.DTOs.Response;
+using TicketSystem.Domain.Common;
 using TicketSystem.Domain.Entities;
 using TicketSystem.Domain.Enums;
 using TicketSystem.Infrastructure.Data;
@@ -30,7 +31,7 @@ public class TicketService : ITicketService
             CategoryId = request.CategoryId,
             CustomerId = customerId,
             Status = TicketStatus.New,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTimeProvider.Now
         };
 
         // NOTE: No auto-assignment at creation time
@@ -216,11 +217,11 @@ public class TicketService : ITicketService
 
         var oldStatus = ticket.Status;
         ticket.Status = request.NewStatus;
-        ticket.UpdatedAt = DateTime.UtcNow;
+        ticket.UpdatedAt = DateTimeProvider.Now;
 
         if (request.NewStatus == TicketStatus.Closed)
         {
-            ticket.ClosedAt = DateTime.UtcNow;
+            ticket.ClosedAt = DateTimeProvider.Now;
         }
 
         // Add status history
@@ -230,7 +231,7 @@ public class TicketService : ITicketService
             OldStatus = oldStatus,
             NewStatus = request.NewStatus,
             ChangedBy = userId,
-            ChangedAt = DateTime.UtcNow,
+            ChangedAt = DateTimeProvider.Now,
             Comment = request.Comment
         };
 
@@ -252,7 +253,7 @@ public class TicketService : ITicketService
             throw new KeyNotFoundException($"Ticket bulunamadı: {ticketId}");
 
         ticket.AssignedTechnicianId = technicianId;
-        ticket.UpdatedAt = DateTime.UtcNow;
+        ticket.UpdatedAt = DateTimeProvider.Now;
 
         await _context.SaveChangesAsync();
 
@@ -275,6 +276,7 @@ public class TicketService : ITicketService
     {
         var messages = await _context.TicketMessages
             .Include(m => m.Sender)
+            .Include(m => m.Attachments)
             .Where(m => m.TicketId == ticketId)
             .OrderBy(m => m.SentAt)
             .ToListAsync();
@@ -287,18 +289,27 @@ public class TicketService : ITicketService
             SenderName = m.Sender.FullName,
             Message = m.Message,
             SentAt = m.SentAt,
-            IsRead = m.IsRead
+            IsRead = m.IsRead,
+            Attachments = m.Attachments?.Select(a => new AttachmentResponse
+            {
+                Id = a.Id,
+                FileName = a.FileName,
+                FileUrl = a.FileUrl,
+                FileSize = a.FileSize,
+                FileType = a.FileType,
+                UploadedAt = a.UploadedAt
+            }).ToList()
         });
     }
 
-    public async Task<TicketMessageResponse> SendMessageAsync(SendMessageRequest request, Guid senderId)
+    public async Task<TicketMessageResponse> SendMessageAsync(SendMessageRequest request, Guid senderId, Microsoft.AspNetCore.Http.IFormFile? attachment = null)
     {
         var message = new TicketMessage
         {
             TicketId = request.TicketId,
             SenderId = senderId,
             Message = request.Message,
-            SentAt = DateTime.UtcNow,
+            SentAt = DateTimeProvider.Now,
             IsRead = false
         };
 
@@ -311,7 +322,7 @@ public class TicketService : ITicketService
 
         if (ticket != null)
         {
-            ticket.UpdatedAt = DateTime.UtcNow;
+            ticket.UpdatedAt = DateTimeProvider.Now;
 
             // AUTO-ASSIGN LOGIC: If sender is technician/admin and ticket is not assigned yet
             var sender = await _context.Users.FindAsync(senderId);
@@ -335,7 +346,7 @@ public class TicketService : ITicketService
                     OldStatus = TicketStatus.New,
                     NewStatus = TicketStatus.InProgress,
                     ChangedBy = senderId,
-                    ChangedAt = DateTime.UtcNow,
+                    ChangedAt = DateTimeProvider.Now,
                     Comment = "Otomatik atama - İlk yanıt"
                 };
                 _context.TicketStatusHistories.Add(statusHistory);
@@ -344,7 +355,46 @@ public class TicketService : ITicketService
 
         await _context.SaveChangesAsync();
 
+        // Handle file attachment if provided
+        if (attachment != null && attachment.Length > 0)
+        {
+            var uploadFolder = "uploads";
+            var webRootPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+            var uploadPath = Path.Combine(webRootPath, uploadFolder, request.TicketId.ToString());
+
+            if (!Directory.Exists(uploadPath))
+                Directory.CreateDirectory(uploadPath);
+
+            var fileName = $"{Guid.NewGuid()}{Path.GetExtension(attachment.FileName)}";
+            var filePath = Path.Combine(uploadPath, fileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await attachment.CopyToAsync(stream);
+            }
+
+            var ticketAttachment = new TicketAttachment
+            {
+                MessageId = message.Id,
+                TicketId = request.TicketId,
+                FileName = attachment.FileName,
+                FileUrl = $"/{uploadFolder}/{request.TicketId}/{fileName}",
+                FileSize = attachment.Length,
+                FileType = attachment.ContentType,
+                UploadedBy = senderId,
+                UploadedAt = DateTimeProvider.Now
+            };
+
+            _context.TicketAttachments.Add(ticketAttachment);
+            await _context.SaveChangesAsync();
+        }
+
         var senderUser = await _context.Users.FindAsync(senderId);
+
+        // Reload message with attachments
+        var messageWithAttachments = await _context.TicketMessages
+            .Include(m => m.Attachments)
+            .FirstOrDefaultAsync(m => m.Id == message.Id);
 
         return new TicketMessageResponse
         {
@@ -354,7 +404,16 @@ public class TicketService : ITicketService
             SenderName = senderUser?.FullName ?? "Unknown",
             Message = message.Message,
             SentAt = message.SentAt,
-            IsRead = message.IsRead
+            IsRead = message.IsRead,
+            Attachments = messageWithAttachments?.Attachments?.Select(a => new AttachmentResponse
+            {
+                Id = a.Id,
+                FileName = a.FileName,
+                FileUrl = a.FileUrl,
+                FileSize = a.FileSize,
+                FileType = a.FileType,
+                UploadedAt = a.UploadedAt
+            }).ToList()
         };
     }
 

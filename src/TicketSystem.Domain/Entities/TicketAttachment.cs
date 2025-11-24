@@ -11,7 +11,7 @@ public class TicketAttachment : BaseEntity
     public long FileSize { get; set; }
     public string FileType { get; set; } = string.Empty;
     public Guid UploadedBy { get; set; }
-    public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UploadedAt { get; set; } = DateTimeProvider.Now;
 
     // Navigation properties
     public TicketMessage? Message { get; set; }

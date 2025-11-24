@@ -9,6 +9,7 @@ using TicketSystem.API.Hubs;
 using TicketSystem.Application.Services.Auth;
 using TicketSystem.Application.Services.Ticket;
 using TicketSystem.Application.Services.User;
+using TicketSystem.Application.Services.Attachment;
 using TicketSystem.Infrastructure.Identity;
 using TicketSystem.API.Authorization.Handlers;
 using TicketSystem.API.Authorization.Requirements;
@@ -32,6 +33,7 @@ builder.Services.AddScoped<JwtTokenGenerator>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITicketService, TicketService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IAttachmentService, AttachmentService>();
 
 // JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
@@ -129,6 +131,9 @@ else
 }
 
 app.UseCors("AllowFrontend");
+
+// Serve static files (for uploaded attachments)
+app.UseStaticFiles();
 
 app.UseAuthentication();
 app.UseAuthorization();

@@ -153,18 +153,21 @@ namespace TicketSystem.Infrastructure.Migrations
 
                     b.Property<string>("FileName")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
 
                     b.Property<long>("FileSize")
                         .HasColumnType("bigint");
 
                     b.Property<string>("FileType")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
 
                     b.Property<string>("FileUrl")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasMaxLength(1000)
+                        .HasColumnType("varchar(1000)");
 
                     b.Property<int?>("MessageId")
                         .HasColumnType("int");
@@ -181,16 +184,13 @@ namespace TicketSystem.Infrastructure.Migrations
                     b.Property<Guid>("UploadedBy")
                         .HasColumnType("char(36)");
 
-                    b.Property<Guid>("UploaderUserId")
-                        .HasColumnType("char(36)");
-
                     b.HasKey("Id");
 
                     b.HasIndex("MessageId");
 
                     b.HasIndex("TicketId");
 
-                    b.HasIndex("UploaderUserId");
+                    b.HasIndex("UploadedBy");
 
                     b.ToTable("TicketAttachments");
                 });
@@ -227,7 +227,7 @@ namespace TicketSystem.Infrastructure.Migrations
                         new
                         {
                             Id = 1,
-                            CreatedAt = new DateTime(2025, 11, 24, 11, 2, 4, 12, DateTimeKind.Utc).AddTicks(2264),
+                            CreatedAt = new DateTime(2025, 11, 24, 12, 18, 56, 429, DateTimeKind.Utc).AddTicks(603),
                             Description = "Web sitesi kurulum talepleri",
                             IsActive = true,
                             Name = "Web Kurulum"
@@ -235,7 +235,7 @@ namespace TicketSystem.Infrastructure.Migrations
                         new
                         {
                             Id = 2,
-                            CreatedAt = new DateTime(2025, 11, 24, 11, 2, 4, 12, DateTimeKind.Utc).AddTicks(2266),
+                            CreatedAt = new DateTime(2025, 11, 24, 12, 18, 56, 429, DateTimeKind.Utc).AddTicks(606),
                             Description = "Mevcut web sitesi değişiklik talepleri",
                             IsActive = true,
                             Name = "Revize Talebi"
@@ -243,7 +243,7 @@ namespace TicketSystem.Infrastructure.Migrations
                         new
                         {
                             Id = 3,
-                            CreatedAt = new DateTime(2025, 11, 24, 11, 2, 4, 12, DateTimeKind.Utc).AddTicks(2267),
+                            CreatedAt = new DateTime(2025, 11, 24, 12, 18, 56, 429, DateTimeKind.Utc).AddTicks(609),
                             Description = "Grafik tasarım talepleri",
                             IsActive = true,
                             Name = "Grafik Tasarım"
@@ -251,7 +251,7 @@ namespace TicketSystem.Infrastructure.Migrations
                         new
                         {
                             Id = 4,
-                            CreatedAt = new DateTime(2025, 11, 24, 11, 2, 4, 12, DateTimeKind.Utc).AddTicks(2269),
+                            CreatedAt = new DateTime(2025, 11, 24, 12, 18, 56, 429, DateTimeKind.Utc).AddTicks(611),
                             Description = "Yazılım geliştirme talepleri",
                             IsActive = true,
                             Name = "Yazılım"
@@ -259,7 +259,7 @@ namespace TicketSystem.Infrastructure.Migrations
                         new
                         {
                             Id = 5,
-                            CreatedAt = new DateTime(2025, 11, 24, 11, 2, 4, 12, DateTimeKind.Utc).AddTicks(2270),
+                            CreatedAt = new DateTime(2025, 11, 24, 12, 18, 56, 429, DateTimeKind.Utc).AddTicks(612),
                             Description = "Alibaba.com ile ilgili talepler",
                             IsActive = true,
                             Name = "Alibaba.com"
@@ -267,7 +267,7 @@ namespace TicketSystem.Infrastructure.Migrations
                         new
                         {
                             Id = 6,
-                            CreatedAt = new DateTime(2025, 11, 24, 11, 2, 4, 12, DateTimeKind.Utc).AddTicks(2271),
+                            CreatedAt = new DateTime(2025, 11, 24, 12, 18, 56, 429, DateTimeKind.Utc).AddTicks(614),
                             Description = "Muhasebe ve satış talepleri",
                             IsActive = true,
                             Name = "Muhasebe Satış"
@@ -275,7 +275,7 @@ namespace TicketSystem.Infrastructure.Migrations
                         new
                         {
                             Id = 7,
-                            CreatedAt = new DateTime(2025, 11, 24, 11, 2, 4, 12, DateTimeKind.Utc).AddTicks(2273),
+                            CreatedAt = new DateTime(2025, 11, 24, 12, 18, 56, 429, DateTimeKind.Utc).AddTicks(616),
                             Description = "Alan adı, sunucu ve lisans yenileme",
                             IsActive = true,
                             Name = "Alan Adı Sunucu Lisans Yenileme"
@@ -283,7 +283,7 @@ namespace TicketSystem.Infrastructure.Migrations
                         new
                         {
                             Id = 8,
-                            CreatedAt = new DateTime(2025, 11, 24, 11, 2, 4, 12, DateTimeKind.Utc).AddTicks(2274),
+                            CreatedAt = new DateTime(2025, 11, 24, 12, 18, 56, 429, DateTimeKind.Utc).AddTicks(618),
                             Description = "Sunucu ve email yönetimi",
                             IsActive = true,
                             Name = "Sunucu-Email Yönetimi Teknik Destek"
@@ -480,7 +480,8 @@ namespace TicketSystem.Infrastructure.Migrations
                 {
                     b.HasOne("TicketSystem.Domain.Entities.TicketMessage", "Message")
                         .WithMany()
-                        .HasForeignKey("MessageId");
+                        .HasForeignKey("MessageId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.HasOne("TicketSystem.Domain.Entities.Ticket", "Ticket")
                         .WithMany("Attachments")
@@ -490,7 +491,7 @@ namespace TicketSystem.Infrastructure.Migrations
 
                     b.HasOne("TicketSystem.Domain.Entities.User", "Uploader")
                         .WithMany()
-                        .HasForeignKey("UploaderUserId")
+                        .HasForeignKey("UploadedBy")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

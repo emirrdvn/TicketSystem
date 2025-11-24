@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using TicketSystem.Application.DTOs.Response;
+using TicketSystem.Domain.Common;
 using TicketSystem.Domain.Entities;
 using TicketSystem.Domain.Enums;
 using TicketSystem.Infrastructure.Data;
@@ -66,7 +67,7 @@ public class UserService : IUserService
 
         user.FullName = userDto.FullName;
         user.PhoneNumber = userDto.PhoneNumber;
-        user.UpdatedAt = DateTime.UtcNow;
+        user.UpdatedAt = DateTimeProvider.Now;
 
         await _context.SaveChangesAsync();
 
@@ -96,7 +97,7 @@ public class UserService : IUserService
             return false;
 
         user.IsActive = true;
-        user.UpdatedAt = DateTime.UtcNow;
+        user.UpdatedAt = DateTimeProvider.Now;
 
         await _context.SaveChangesAsync();
 
@@ -112,7 +113,7 @@ public class UserService : IUserService
             return false;
 
         user.IsActive = false;
-        user.UpdatedAt = DateTime.UtcNow;
+        user.UpdatedAt = DateTimeProvider.Now;
 
         await _context.SaveChangesAsync();
 
@@ -151,7 +152,7 @@ public class UserService : IUserService
             {
                 TechnicianId = technicianId,
                 CategoryId = categoryId,
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTimeProvider.Now
             };
 
             _context.TechnicianCategories.Add(technicianCategory);

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ticketAPI } from '../../lib/api/ticket.api';
+import { attachmentAPI } from '../../lib/api/attachment.api';
 import { startConnection, stopConnection, getConnection } from '../../lib/signalr/connection';
 import { useAuth } from '../../context/AuthContext';
 import { TicketStatus, StatusLabels, StatusColors, UserType } from '../../types';
@@ -21,6 +22,9 @@ const TicketDetailPage = () => {
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState(null);
   const [statusComment, setStatusComment] = useState('');
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const fileInputRef = useRef(null);
 
   // Determine back navigation path based on user role
   const getBackPath = () => {
@@ -85,13 +89,23 @@ const TicketDetailPage = () => {
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!newMessage.trim() || sending) return;
+    if ((!newMessage.trim() && !selectedFile) || sending) return;
 
     setSending(true);
     try {
-      // Send message via API - Backend will broadcast via SignalR
-      await ticketAPI.sendMessage(parseInt(id), newMessage.trim());
+      // Create FormData to send both message and file
+      const formData = new FormData();
+      formData.append('ticketId', parseInt(id));
+      formData.append('message', newMessage.trim() || '');
+      if (selectedFile) {
+        formData.append('attachment', selectedFile);
+      }
+
+      // Send message (with optional attachment) via API
+      await ticketAPI.sendMessageWithAttachment(parseInt(id), formData);
       setNewMessage('');
+      setSelectedFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
       // Refresh ticket to see if auto-assigned
       await fetchTicketDetails();
     } catch (error) {
@@ -120,6 +134,18 @@ const TicketDetailPage = () => {
     } catch (error) {
       console.error('Error updating status:', error);
       alert('Durum güncellenemedi');
+    }
+  };
+
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // 10MB limit
+      if (file.size > 10 * 1024 * 1024) {
+        alert('Dosya boyutu 10MB\'dan küçük olmalıdır');
+        return;
+      }
+      setSelectedFile(file);
     }
   };
 
@@ -299,7 +325,60 @@ const TicketDetailPage = () => {
                                 : 'bg-gray-100 text-gray-900'
                             }`}
                           >
-                            <p className="text-sm whitespace-pre-wrap">{message.message}</p>
+                            {message.message && (
+                              <p className="text-sm whitespace-pre-wrap">{message.message}</p>
+                            )}
+                            {message.attachments && message.attachments.length > 0 && (
+                              <div className={`space-y-2 ${message.message ? 'mt-2' : ''}`}>
+                                {message.attachments.map((attachment) => {
+                                  const isImage = attachment.fileType?.startsWith('image/');
+                                  const fileUrl = `http://localhost:5000${attachment.fileUrl}`;
+
+                                  if (isImage) {
+                                    return (
+                                      <div
+                                        key={attachment.id}
+                                        onClick={() => setSelectedImage(fileUrl)}
+                                        className="cursor-pointer"
+                                      >
+                                        <img
+                                          src={fileUrl}
+                                          alt={attachment.fileName}
+                                          className="max-w-xs rounded-lg shadow-md hover:opacity-90 transition-opacity"
+                                        />
+                                        <p className="text-xs mt-1 opacity-75">
+                                          {attachment.fileName} • {(attachment.fileSize / 1024).toFixed(1)} KB
+                                        </p>
+                                      </div>
+                                    );
+                                  }
+
+                                  return (
+                                    <a
+                                      key={attachment.id}
+                                      href={fileUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className={`flex items-center space-x-2 p-2 rounded ${
+                                        isOwnMessage
+                                          ? 'bg-blue-700 hover:bg-blue-800'
+                                          : 'bg-gray-200 hover:bg-gray-300'
+                                      }`}
+                                    >
+                                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                                      </svg>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-sm truncate">{attachment.fileName}</p>
+                                        <p className="text-xs opacity-75">
+                                          {(attachment.fileSize / 1024).toFixed(1)} KB
+                                        </p>
+                                      </div>
+                                    </a>
+                                  );
+                                })}
+                              </div>
+                            )}
                           </div>
                           <p className={`mt-1 text-xs text-gray-500 ${isOwnMessage ? 'text-right' : 'text-left'}`}>
                             {message.senderName} • {format(new Date(message.sentAt), 'HH:mm', { locale: tr })}
@@ -314,7 +393,43 @@ const TicketDetailPage = () => {
 
               {/* Message Input */}
               <div className="p-4 border-t border-gray-200">
+                {selectedFile && (
+                  <div className="mb-2 flex items-center justify-between bg-blue-50 p-3 rounded-lg">
+                    <div className="flex items-center space-x-2">
+                      <svg className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                      </svg>
+                      <span className="text-sm text-gray-700">{selectedFile.name}</span>
+                      <span className="text-xs text-gray-500">({(selectedFile.size / 1024).toFixed(1)} KB)</span>
+                    </div>
+                    <button
+                      onClick={() => setSelectedFile(null)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
                 <form onSubmit={handleSendMessage} className="flex space-x-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                    accept="image/*,.pdf,.doc,.docx,.txt"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    title="Dosya ekle"
+                  >
+                    <svg className="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                    </svg>
+                  </button>
                   <input
                     type="text"
                     value={newMessage}
@@ -325,7 +440,7 @@ const TicketDetailPage = () => {
                   />
                   <button
                     type="submit"
-                    disabled={!newMessage.trim() || sending}
+                    disabled={(!newMessage.trim() && !selectedFile) || sending}
                     className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {sending ? (
@@ -391,6 +506,31 @@ const TicketDetailPage = () => {
                 Güncelle
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Image Modal */}
+      {selectedImage && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4"
+          onClick={() => setSelectedImage(null)}
+        >
+          <div className="relative max-w-7xl max-h-full">
+            <button
+              onClick={() => setSelectedImage(null)}
+              className="absolute -top-10 right-0 text-white hover:text-gray-300"
+            >
+              <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <img
+              src={selectedImage}
+              alt="Full size"
+              className="max-w-full max-h-[90vh] object-contain rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
           </div>
         </div>
       )}

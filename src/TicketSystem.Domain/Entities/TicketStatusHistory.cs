@@ -9,7 +9,7 @@ public class TicketStatusHistory : BaseEntity
     public TicketStatus OldStatus { get; set; }
     public TicketStatus NewStatus { get; set; }
     public Guid ChangedBy { get; set; }
-    public DateTime ChangedAt { get; set; } = DateTime.UtcNow;
+    public DateTime ChangedAt { get; set; } = DateTimeProvider.Now;
     public string? Comment { get; set; }
 
     // Navigation properties

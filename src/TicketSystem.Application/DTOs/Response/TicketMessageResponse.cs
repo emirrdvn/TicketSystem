@@ -9,4 +9,5 @@ public class TicketMessageResponse
     public string Message { get; set; } = string.Empty;
     public DateTime SentAt { get; set; }
     public bool IsRead { get; set; }
+    public List<AttachmentResponse>? Attachments { get; set; }
 }
